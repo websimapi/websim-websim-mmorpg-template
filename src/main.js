@@ -93,9 +93,10 @@ class Game {
         // Get my own info
         const myInfo = this.network.room.peers[this.network.clientId] || { username: 'Player' };
         
-        this.localPlayer = new LocalPlayer(this.scene, this.world, this.network);
-        // Sync initial name
-        this.localPlayer.createNameTag(myInfo.username);
+        this.localPlayer = new LocalPlayer(this.scene, this.world, this.network, myInfo.username);
+        
+        // Resolve names immediately to handle potential duplicates with existing peers
+        this.resolvePlayerNames();
 
         document.getElementById('loading').style.opacity = 0;
         
@@ -109,13 +110,41 @@ class Game {
         const player = new RemotePlayer(this.scene, id, combinedData);
         this.remotePlayers[id] = player;
         this.ui.log(`${combinedData.username} joined.`);
+        this.resolvePlayerNames();
     }
 
     removeRemotePlayer(id) {
         if (this.remotePlayers[id]) {
             this.remotePlayers[id].destroy();
             delete this.remotePlayers[id];
+            this.resolvePlayerNames();
         }
+    }
+
+    resolvePlayerNames() {
+        // Gather all players
+        const allPlayers = [];
+        if (this.localPlayer) allPlayers.push(this.localPlayer);
+        Object.values(this.remotePlayers).forEach(p => allPlayers.push(p));
+
+        // Sort by ID to ensure consistent naming order across all clients
+        allPlayers.sort((a, b) => a.id.localeCompare(b.id));
+
+        const nameCounts = {};
+
+        // Assign names
+        allPlayers.forEach(p => {
+            const raw = p.rawUsername;
+            if (!nameCounts[raw]) nameCounts[raw] = 0;
+            nameCounts[raw]++;
+            
+            const count = nameCounts[raw];
+            if (count > 1) {
+                p.username = `${raw} (${count - 1})`;
+            } else {
+                p.username = raw;
+            }
+        });
     }
 
     updateCamera() {

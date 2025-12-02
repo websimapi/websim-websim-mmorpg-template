@@ -5,6 +5,8 @@ class BasePlayer {
     constructor(scene, id, data) {
         this.id = id;
         this.scene = scene;
+        this.rawUsername = data.username || 'Unknown';
+        this.username = this.rawUsername;
         this.mesh = this.createMesh(data);
         this.scene.add(this.mesh);
 
@@ -53,8 +55,8 @@ class BasePlayer {
 }
 
 export class LocalPlayer extends BasePlayer {
-    constructor(scene, world, network) {
-        super(scene, 'local', { username: 'You' });
+    constructor(scene, world, network, initialUsername) {
+        super(scene, network.clientId, { username: initialUsername });
         this.world = world;
         this.network = network;
 

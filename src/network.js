@@ -7,11 +7,13 @@ export class NetworkManager {
         this.peers = {};
         this.lastUpdate = 0;
         this.updateRate = 100; // ms (10 updates per second)
+        this.pingInterval = null;
     }
 
     async init() {
         await this.room.initialize();
-        
+        this.clientId = this.room.clientId;
+
         // Subscribe to presence changes (players moving)
         this.room.subscribePresence((presence) => {
             this.handlePresenceUpdate(presence);
@@ -27,14 +29,29 @@ export class NetworkManager {
             const data = event.data;
             if (data.type === 'chat') {
                 this.game.ui.log(`${data.username}: ${data.message}`);
+            } else if (data.type === 'ping') {
+                // If this is a ping we sent (echoed back), measure latency
+                if (data.from === this.clientId) {
+                    const latency = Date.now() - data.timestamp;
+                    document.getElementById('ping').innerText = `Ping: ${latency} ms`;
+                }
             }
         };
 
         // Initial setup
-        this.clientId = this.room.clientId;
         this.updateUI();
 
         console.log("Network initialized. Client ID:", this.clientId);
+        
+        // Start Ping Loop (every 2 seconds)
+        this.pingInterval = setInterval(() => {
+            this.room.send({
+                type: 'ping',
+                from: this.clientId,
+                timestamp: Date.now(),
+                echo: true // Important: send back to self to measure round trip
+            });
+        }, 2000);
         
         // Throttled function to send updates
         this.broadcastPresence = throttle((data) => {
