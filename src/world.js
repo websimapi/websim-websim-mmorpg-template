@@ -29,6 +29,10 @@ export class World {
         this.createLighting();
     }
 
+    getHeightAt(x, z) {
+        return Math.sin(x * 0.1) * Math.cos(z * 0.1) * 2;
+    }
+
     createLighting() {
         const ambient = new THREE.AmbientLight(0xffffff, 0.6);
         this.scene.add(ambient);
@@ -54,9 +58,13 @@ export class World {
         for (let i = 0; i < posAttribute.count; i++) {
             const x = posAttribute.getX(i);
             const y = posAttribute.getY(i);
-            // Gentle rolling hills, keeping center flat-ish
-            const z = Math.sin(x * 0.1) * Math.cos(y * 0.1) * 2;
-            posAttribute.setZ(i, z);
+            
+            // Map local plane coords to world coords to get consistent height
+            // Local X = World X
+            // Local Y = -World Z (rotated -90 deg X)
+            const height = this.getHeightAt(x, -y);
+            
+            posAttribute.setZ(i, height);
         }
 
         geometry.computeVertexNormals();

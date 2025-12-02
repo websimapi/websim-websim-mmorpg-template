@@ -69,6 +69,9 @@ export class LocalPlayer extends BasePlayer {
         this.targetIndicator.rotation.x = -Math.PI/2;
         this.targetIndicator.visible = false;
         this.scene.add(this.targetIndicator);
+
+        // Snap to ground initially
+        this.mesh.position.y = this.world.getHeightAt(this.mesh.position.x, this.mesh.position.z);
     }
 
     setTarget(point) {
@@ -112,6 +115,7 @@ export class LocalPlayer extends BasePlayer {
         if (!this.world.checkCollision(nextX, nextZ)) {
             this.mesh.position.x = nextX;
             this.mesh.position.z = nextZ;
+            this.mesh.position.y = this.world.getHeightAt(nextX, nextZ);
 
             // Rotate to face movement
             const targetRotation = Math.atan2(direction.x, direction.z);
